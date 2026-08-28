@@ -180,6 +180,7 @@
           <input type="text" id="nama" placeholder="Nama Barang" required>
           <input type="text" id="customer" placeholder="Customer" required>
           <input type="number" id="biaya" placeholder="Biaya Service (Rp)" min="0">
+          <input type="text" id="keterangan" placeholder="Keterangan (Keluhan/Kerusakan)">
           
           <select id="status">
             <option value="Masuk">Barang Masuk</option>
@@ -219,11 +220,12 @@
               <th>Status</th>
               <th>Foto (1, 2, 3)</th>
               <th>Biaya</th>
+              <th>Keterangan</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody id="tabel">
-            <tr><td colspan="7" style="color:#94a3b8;">Memuat data dari cloud database...</td></tr>
+            <tr><td colspan="8" style="color:#94a3b8;">Memuat data dari cloud database...</td></tr>
           </tbody>
         </table>
       </div>
@@ -301,7 +303,7 @@
     function tampil(data){
       let isi = "";
       if (data.length === 0) {
-        isi = `<tr><td colspan="7" style="color:#94a3b8;">Belum ada data service.</td></tr>`;
+        isi = `<tr><td colspan="8" style="color:#94a3b8;">Belum ada data service.</td></tr>`;
       } else {
         data.forEach((d) => {
           let fotosHtml = '<div class="img-container">';
@@ -318,6 +320,7 @@
             <td><span style="color:${d.status === 'Masuk' ? '#22c55e' : '#ef4444'}; font-weight:bold;">${d.status}</span></td>
             <td>${fotosHtml}</td>
             <td style="color:#22c55e; font-weight:bold;">${formatRupiah(d.biaya)}</td>
+            <td>${d.keterangan || '-'}</td>
             <td><button class="hapus" onclick="hapusData('${d.id}', '${d.nama}')">Hapus</button></td>
           </tr>`;
         });
@@ -382,6 +385,7 @@
           nama: document.getElementById("nama").value.trim(),
           customer: document.getElementById("customer").value.trim(),
           biaya: biayaInput ? Number(biayaInput) : 0,
+          keterangan: document.getElementById("keterangan").value.trim(),
           status: document.getElementById("status").value,
           foto1: img1,
           foto2: img2,
@@ -415,9 +419,9 @@
         alert("Tidak ada data untuk diekspor!");
         return;
       }
-      let csv = "Tanggal,Barang,Customer,Status,Biaya\n";
+      let csv = "Tanggal,Barang,Customer,Status,Biaya,Keterangan\n";
       dataGlobal.forEach(d => {
-        csv += `"${d.tanggal}","${d.nama}","${d.customer}","${d.status}","${d.biaya || 0}"\n`;
+        csv += `"${d.tanggal}","${d.nama}","${d.customer}","${d.status}","${d.biaya || 0}","${d.keterangan || ''}"\n`;
       });
       let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       let url = window.URL.createObjectURL(blob);
