@@ -179,6 +179,7 @@
           <input type="date" id="tanggal" required>
           <input type="text" id="nama" placeholder="Nama Barang" required>
           <input type="text" id="customer" placeholder="Customer" required>
+          <input type="number" id="biaya" placeholder="Biaya Service (Rp)" min="0">
           
           <select id="status">
             <option value="Masuk">Barang Masuk</option>
@@ -217,11 +218,12 @@
               <th>Customer</th>
               <th>Status</th>
               <th>Foto (1, 2, 3)</th>
+              <th>Biaya</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody id="tabel">
-            <tr><td colspan="6" style="color:#94a3b8;">Memuat data dari cloud database...</td></tr>
+            <tr><td colspan="7" style="color:#94a3b8;">Memuat data dari cloud database...</td></tr>
           </tbody>
         </table>
       </div>
@@ -291,10 +293,15 @@
       });
     }
 
+    function formatRupiah(angka) {
+      if (!angka && angka !== 0) return "-";
+      return "Rp " + Number(angka).toLocaleString("id-ID");
+    }
+
     function tampil(data){
       let isi = "";
       if (data.length === 0) {
-        isi = `<tr><td colspan="6" style="color:#94a3b8;">Belum ada data service.</td></tr>`;
+        isi = `<tr><td colspan="7" style="color:#94a3b8;">Belum ada data service.</td></tr>`;
       } else {
         data.forEach((d) => {
           let fotosHtml = '<div class="img-container">';
@@ -310,6 +317,7 @@
             <td>${d.customer}</td>
             <td><span style="color:${d.status === 'Masuk' ? '#22c55e' : '#ef4444'}; font-weight:bold;">${d.status}</span></td>
             <td>${fotosHtml}</td>
+            <td style="color:#22c55e; font-weight:bold;">${formatRupiah(d.biaya)}</td>
             <td><button class="hapus" onclick="hapusData('${d.id}', '${d.nama}')">Hapus</button></td>
           </tr>`;
         });
@@ -317,7 +325,6 @@
       document.getElementById("tabel").innerHTML = isi;
     }
 
-    // FUNGSI KOMPRESI GAMBAR SECARA OTOMATIS (Mencegah error ukuran besar)
     function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.6) {
       return new Promise((resolve) => {
         if (!file) { resolve(""); return; }
@@ -364,15 +371,17 @@
         let f2 = document.getElementById("foto2").files[0];
         let f3 = document.getElementById("foto3").files[0];
 
-        // Kompres 3 foto sekaligus sebelum simpan
         let img1 = await compressImage(f1);
         let img2 = await compressImage(f2);
         let img3 = await compressImage(f3);
+
+        let biayaInput = document.getElementById("biaya").value;
 
         await addDoc(collection(db, "data_service"), {
           tanggal: document.getElementById("tanggal").value,
           nama: document.getElementById("nama").value.trim(),
           customer: document.getElementById("customer").value.trim(),
+          biaya: biayaInput ? Number(biayaInput) : 0,
           status: document.getElementById("status").value,
           foto1: img1,
           foto2: img2,
@@ -406,9 +415,9 @@
         alert("Tidak ada data untuk diekspor!");
         return;
       }
-      let csv = "Tanggal,Barang,Customer,Status\n";
+      let csv = "Tanggal,Barang,Customer,Status,Biaya\n";
       dataGlobal.forEach(d => {
-        csv += `"${d.tanggal}","${d.nama}","${d.customer}","${d.status}"\n`;
+        csv += `"${d.tanggal}","${d.nama}","${d.customer}","${d.status}","${d.biaya || 0}"\n`;
       });
       let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       let url = window.URL.createObjectURL(blob);
