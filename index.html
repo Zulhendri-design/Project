@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Center App - SAINS QUALITY COMPUTER</title>
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+ 
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #020617, #0f172a);
+      color: white;
+      margin: 0;
+      min-height: 100vh;
+    }
+ 
+    header {
+      background: #020617;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+ 
+    .container {
+      padding: 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+ 
+    .card {
+      background: #111827;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+    }
+ 
+    input, select {
+      padding: 12px;
+      margin: 6px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      background: #020617;
+      color: white;
+      outline: none;
+    }
+
+    input[type="file"] {
+      cursor: pointer;
+    }
+ 
+    button {
+      padding: 12px 20px;
+      margin: 6px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: opacity 0.2s;
+    }
+    
+    button:hover { opacity: 0.85; }
+ 
+    .save { background: #22c55e; color: white; }
+    .logout { background: #ef4444; color: white; }
+    .excel { background: #3b82f6; color: white; }
+    .print { background: #f59e0b; color: white; }
+    .hapus {
+      background: #ef4444;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+ 
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+ 
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #1e293b;
+      text-align: center;
+    }
+ 
+    th { background: #020617; }
+    tr:hover { background: #020617; }
+ 
+    .loginbox {
+      max-width: 350px;
+      margin: 100px auto;
+      background: #111827;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(0,0,0,0.8);
+    }
+
+    .img-preview {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    /* Style khusus saat mencetak halaman */
+    @media print {
+      body { background: white; color: black; }
+      header, .card:first-child, .hapus, #jam { display: none !important; }
+      .card { background: white; box-shadow: none; padding: 0; }
+      th, td { border: 1px solid #000; color: black; }
+      th { background: #eee; }
+    }
+  </style>
+</head>
+ 
+<body>
+ 
+  <!-- BOX LOGIN -->
+  <div id="login">
+    <div class="loginbox">
+      <h2>🔐 LOGIN ADMIN</h2>
+      <input type="text" id="user" placeholder="Username"><br>
+      <input type="password" id="pass" placeholder="Password"><br>
+      <button class="save" onclick="login()">LOGIN</button>
+    </div>
+  </div>
+ 
+  <!-- APLIKASI UTAMA -->
+  <div id="app" style="display:none;">
+    <header>
+      <img src="logo.png" style="height:50px;" alt="Logo" onerror="this.style.display='none'">
+      <div>
+        <div style="font-size:20px; font-weight:bold;">TOKO SERVICE SAINS QUALITY COMPUTER</div>
+        <div style="font-size:12px; color:#94a3b8;">Data Barang Masuk &amp; Keluar</div>
+      </div>
+    </header>
+
+    <div id="jam" style="text-align:center; margin-top:15px; font-size:14px; color:#94a3b8;"></div>
+ 
+    <div class="container">
+      <!-- FORM INPUT -->
+      <div class="card">
+        <h3>Input Barang Service</h3>
+        <form onsubmit="tambahData(); return false;">
+          <input type="date" id="tanggal" required>
+          <input type="text" id="nama" placeholder="Nama Barang" required>
+          <input type="text" id="customer" placeholder="Customer" required>
+          <input type="file" id="foto" accept="image/*">
+          
+          <select id="status">
+            <option value="Masuk">Barang Masuk</option>
+            <option value="Keluar">Barang Keluar</option>
+          </select>
+          <br><br>
+          <button type="submit" class="save">Simpan</button>
+          <button type="button" class="excel" onclick="downloadExcel()">Excel</button>
+          <button type="button" class="print" onclick="printData()">Print</button>
+          <button type="button" class="logout" onclick="logout()">Logout</button>
+        </form>
+      </div>
+ 
+      <!-- TABEL DATA -->
+      <div class="card">
+        <h3>Data Service</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Barang</th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th>Foto</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabel"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+ 
+  <script>
+    let data = JSON.parse(localStorage.getItem("service")) || [];
+ 
+    // Cek Sesi Login saat Halaman Dimuat
+    window.onload = function() {
+      if(sessionStorage.getItem("isLoggedIn") === "true") {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("app").style.display = "block";
+      }
+      // Set default input tanggal ke hari ini
+      document.getElementById("tanggal").valueAsDate = new Date();
+      tampil();
+    };
+
+    function login(){
+      let u = document.getElementById("user").value.trim();
+      let p = document.getElementById("pass").value.trim();
+ 
+      if(u === "admin" && p === "Elmijimo") {
+        sessionStorage.setItem("isLoggedIn", "true");
+        document.getElementById("login").style.display = "none";
+        document.getElementById("app").style.display = "block";
+      } else {
+        alert("Username atau Password salah!");
+      }
+    }
+ 
+    function logout(){
+      if(confirm("Apakah Anda yakin ingin keluar?")) {
+        sessionStorage.removeItem("isLoggedIn");
+        location.reload();
+      }
+    }
+ 
+    function tampil(){
+      let isi = "";
+      if (data.length === 0) {
+        isi = `<tr><td colspan="6" style="color:#94a3b8;">Belum ada data service.</td></tr>`;
+      } else {
+        data.forEach((d, i) => {
+          isi += `<tr>
+            <td>${d.tanggal}</td>
+            <td><b>${d.nama}</b></td>
+            <td>${d.customer}</td>
+            <td><span style="color:${d.status === 'Masuk' ? '#22c55e' : '#ef4444'}; font-weight:bold;">${d.status}</span></td>
+            <td>${d.foto ? `<img src="${d.foto}" class="img-preview" alt="Foto">` : "-"}</td>
+            <td><button class="hapus" onclick="hapus(${i})">Hapus</button></td>
+          </tr>`;
+        });
+      }
+      document.getElementById("tabel").innerHTML = isi;
+    }
+ 
+    function tambahData(){
+      let fileInput = document.getElementById("foto");
+      let file = fileInput.files[0];
+
+      let tglInput = document.getElementById("tanggal").value;
+      let namaInput = document.getElementById("nama").value.trim();
+      let customerInput = document.getElementById("customer").value.trim();
+      let statusInput = document.getElementById("status").value;
+
+      const simpanKeStorage = (fotoDataUrl = "") => {
+        let d = {
+          tanggal: tglInput,
+          nama: namaInput,
+          customer: customerInput,
+          status: statusInput,
+          foto: fotoDataUrl
+        };
+        data.push(d);
+        localStorage.setItem("service", JSON.stringify(data));
+        tampil();
+        document.querySelector("form").reset();
+        document.getElementById("tanggal").valueAsDate = new Date();
+      };
+
+      if(file){
+        let reader = new FileReader();
+        reader.onload = function(){
+          simpanKeStorage(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        simpanKeStorage("");
+      }
+    }
+ 
+    function hapus(i){
+      if(confirm(`Hapus data service "${data[i].nama}"?`)) {
+        data.splice(i, 1);
+        localStorage.setItem("service", JSON.stringify(data));
+        tampil();
+      }
+    }
+ 
+    function downloadExcel(){
+      if(data.length === 0) {
+        alert("Tidak ada data untuk diekspor!");
+        return;
+      }
+      let csv = "Tanggal,Barang,Customer,Status\n";
+      data.forEach(d => {
+        csv += `"${d.tanggal}","${d.nama}","${d.customer}","${d.status}"\n`;
+      });
+      let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      let url = window.URL.createObjectURL(blob);
+      let a = document.createElement("a");
+      a.href = url;
+      a.download = `Data_Service_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+ 
+    function printData(){
+      if(data.length === 0) {
+        alert("Tidak ada data untuk dicetak!");
+        return;
+      }
+      window.print();
+    }
+ 
+    function updateJam(){
+      let now = new Date();
+      let tgl = now.toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+      let jam = now.toLocaleTimeString("id-ID");
+      document.getElementById("jam").innerHTML = `📅 ${tgl} | ⏰ ${jam} WIB`;
+    }
+ 
+    setInterval(updateJam, 1000);
+    updateJam();
+  </script>
+</body>
+</html>
